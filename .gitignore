@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+
+# Eclipse stuff
+.project
+.cproject
+.settings
