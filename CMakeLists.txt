@@ -4,7 +4,7 @@ set(MMAI_VERSION_MAJOR 0)
 set(MMAI_VERSION_MINOR 1)
 set(MMAI_VERSION_FULL ${MMAI_VERSION_MAJOR}.${MMAI_VERSION_MINOR})
 
-project(mmai-projec)
+project(mmai-project)
 
 find_library(SND_LIB sndfile)
 if(NOT SND_LIB)
