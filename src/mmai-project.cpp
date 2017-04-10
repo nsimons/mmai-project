@@ -50,6 +50,9 @@ int main() {
 	sf_write_sync(outfile);
 	sf_close(outfile);
 	
+	free(inbuf);
+	free(outbuf);
+
 	cout << "File processed" << endl;
 	return 0;
 }

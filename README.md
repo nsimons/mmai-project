@@ -7,6 +7,8 @@ Reverb implementation for MMAI Course
 
 ### Linux
 
+`sudo apt-get install libsndfile1-dev`
+
 `./scripts/build.sh`
 
 `./build/mmai-exec`
