@@ -5,3 +5,6 @@ script: scripts/build.sh
 compiler:
     - clang
     - gcc
+
+notifications:
+  email: false
