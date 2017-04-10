@@ -3,17 +3,23 @@
 //============================================================================
 
 #include <iostream>
-#include "revmodel.hpp"
+#include <cassert>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sndfile.h>
 
+#include "revmodel.hpp"
+
 using namespace std;
+
+#define INFILE "infile.wav"
+#define OUTFILE "outfile.wav"
 
 int main() {
 	revmodel model;
 	
-	SNDFILE *infile, *outfile;;
+	SNDFILE *infile, *outfile;
 	SF_INFO info;
 	int num, num_items;
 	float *inbuf, *outbuf;
@@ -22,10 +28,10 @@ int main() {
 	
 	/* Open the WAV file */
 	info.format = 0;
-	infile = sf_open("infile.wav",SFM_READ, &info);
+	infile = sf_open(INFILE, SFM_READ, &info);
 	if(infile == NULL)
 	{
-		printf("Failed to open the file.\n");
+		printf("Failed to open the file: %s\n", INFILE);
 		exit(-1);
 	}
 	/* Read info, and figure out how much data to read. */
@@ -33,10 +39,12 @@ int main() {
 	sr = info.samplerate;
 	c = info.channels;
 	num_items = f*c;
+
 	/* Allocate space for the data to be read, then read it. */
 	inbuf = (float *)malloc(num_items*sizeof(float));
 	outbuf = (float *)malloc(num_items*sizeof(float));
 	num = sf_read_float(infile,inbuf,num_items);
+	assert(num == num_items);
 	sf_close(infile);
 	
 	
@@ -45,11 +53,14 @@ int main() {
 	
 	
 	/* Write to wav file*/
-	outfile = sf_open("outfile.wav",SFM_WRITE, &info);
-	sf_count_t count = sf_write_float(outfile, outbuf, num_items);
-	sf_write_sync(outfile);
-	sf_close(outfile);
-	
+	outfile = sf_open(OUTFILE, SFM_WRITE, &info);
+	if (outfile) {
+		sf_count_t count = sf_write_float(outfile, outbuf, num_items);
+		assert(count == num_items);
+		sf_write_sync(outfile);
+		sf_close(outfile);
+	}
+
 	free(inbuf);
 	free(outbuf);
 
