@@ -32,3 +32,6 @@
 .project
 .cproject
 .settings
+
+# Build
+build
