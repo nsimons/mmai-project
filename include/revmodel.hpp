@@ -9,6 +9,7 @@
 
 #include "comb.hpp"
 #include "allpass.hpp"
+#include "delayline.hpp"
 #include "tuning.h"
 
 class revmodel
