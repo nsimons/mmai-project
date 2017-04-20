@@ -45,6 +45,9 @@ private:
 	// The following are all declared inline 
 	// to remove the need for dynamic allocation
 	// with its subsequent error-checking messiness
+	
+	// Delay lines
+	delayline delayLine[numdelaylines];
 
 	// Comb filters
 	comb	combL[numcombs];
@@ -53,6 +56,14 @@ private:
 	// Allpass filters
 	allpass	allpassL[numallpasses];
 	allpass	allpassR[numallpasses];
+	
+	// Buffers for delay lines
+	float	bufdelayLine1[delaylinetuning];
+	float	bufdelayLine2[delaylinetuning];
+	float	bufdelayLine3[delaylinetuning];
+	float	bufdelayLine4[delaylinetuning];
+	float	bufdelayLine5[delaylinetuning];
+	float	bufdelayLine6[delaylinetuning];
 
 	// Buffers for the combs
 	float	bufcombL1[combtuningL1];

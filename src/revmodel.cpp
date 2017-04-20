@@ -9,6 +9,12 @@
 revmodel::revmodel()
 {
 	// Tie the components to their buffers
+	delayLine[0].setbuffer(bufdelayLine1,delaylinetuning);
+	delayLine[1].setbuffer(bufdelayLine2,delaylinetuning);
+	delayLine[2].setbuffer(bufdelayLine3,delaylinetuning);
+	delayLine[3].setbuffer(bufdelayLine4,delaylinetuning);
+	delayLine[4].setbuffer(bufdelayLine5,delaylinetuning);
+	delayLine[5].setbuffer(bufdelayLine6,delaylinetuning);
 	combL[0].setbuffer(bufcombL1,combtuningL1);
 	combR[0].setbuffer(bufcombR1,combtuningR1);
 	combL[1].setbuffer(bufcombL2,combtuningL2);
@@ -58,7 +64,11 @@ void revmodel::mute()
 {
 	if (getmode() >= freezemode)
 		return;
-
+	
+	for (int i=0;i<numdelaylines;i++)
+	{
+		delayLine[i].mute();
+	}
 	for (int i=0;i<numcombs;i++)
 	{
 		combL[i].mute();
@@ -73,12 +83,20 @@ void revmodel::mute()
 
 void revmodel::processreplace(float *inputL, float *inputR, float *outputL, float *outputR, long numsamples, int skip)
 {
-	float outL,outR,input;
+	float outL,outR,input,earlyRefl;
 
 	while(numsamples-- > 0)
 	{
 		outL = outR = 0;
 		input = (*inputL + *inputR) * gain;
+		
+		// Tapped delay line for early reflections
+		earlyRefl = 0;
+		for(int i=0; i<numdelaylines; i++)
+		{
+			input = delayLine[i].process(input);
+			earlyRefl += tapgain[i]*input;
+		}
 
 		// Accumulate comb filters in parallel
 		for(int i=0; i<numcombs; i++)
@@ -95,8 +113,8 @@ void revmodel::processreplace(float *inputL, float *inputR, float *outputL, floa
 		}
 
 		// Calculate output REPLACING anything already there
-		*outputL = outL*wet1 + outR*wet2 + *inputL*dry;
-		*outputR = outR*wet1 + outL*wet2 + *inputR*dry;
+		*outputL = outL*wet1 + outR*wet2 + *inputL*dry + earlyRefl;
+		*outputR = outR*wet1 + outL*wet2 + *inputR*dry + earlyRefl;
 
 		// Increment sample pointers, allowing for interleave (if any)
 		inputL += skip;
