@@ -17,7 +17,13 @@ using namespace std;
 #define OUTFILE "outfile.wav"
 
 void show_help(string name) {
-	cout << "Usage: " << name << endl;
+	cout << "Usage: " << name << " [options [..]]\n"
+		 << "Options:\n"
+		 << "-h, --help\t Show help\n"
+		 << "--wet WET\t Set the wet coefficient (float)\n"
+		 << "--dry DRY\t Set the dry coefficient (float)\n"
+		 << "--damp DAMP\t Set the damp coefficient (float)\n"
+		 << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -35,13 +41,30 @@ int main(int argc, char *argv[]) {
 			show_help(argv[0]);
 			return 0;
 		}
+		else if (arg == "--wet") {
+			assert(i++ != argc);
+			float val = strtof(argv[i], NULL);
+			cout << "Setting wet to " << val << endl;
+			model.setwet(val);
+		}
+		else if (arg == "--dry") {
+			assert(i++ != argc);
+			float val = strtof(argv[i], NULL);
+			cout << "Setting dry to " << val << endl;
+			model.setdry(val);
+		}
+		else if (arg == "--damp") {
+			assert(i++ != argc);
+			float val = strtof(argv[i], NULL);
+			cout << "Setting damp to " << val << endl;
+			model.setdamp(val);
+		}
 		else {
 			cout << "Invalid argument: " << arg << endl;
 			show_help(argv[0]);
 			return 0;
 		}
 	}
-
 	
 	/* Open the WAV file */
 	info.format = 0;
