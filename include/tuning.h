@@ -7,6 +7,7 @@
 #ifndef _tuning_
 #define _tuning_
 
+const int	numdelaylines 	= 6;
 const int	numcombs		= 8;
 const int	numallpasses	= 4;
 const float	muted			= 0;
@@ -24,6 +25,7 @@ const float initialwidth	= 1;
 const float initialmode		= 0;
 const float freezemode		= 0.5f;
 const int	stereospread	= 23;
+const float tapgain[]		= {0.841, 0.504, 0.491, 0.379, 0.380, 0.346};
 
 // These values assume 44.1KHz sample rate
 // they will probably be OK for 48KHz sample rate
@@ -53,6 +55,8 @@ const int allpasstuningL3	= 341;
 const int allpasstuningR3	= 341+stereospread;
 const int allpasstuningL4	= 225;
 const int allpasstuningR4	= 225+stereospread;
+
+const int delaylinetuning	= 735;		// (44.1Khz / 100ms)/6delaylines
 
 #endif//_tuning_
 
