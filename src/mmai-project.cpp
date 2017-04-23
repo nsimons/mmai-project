@@ -42,19 +42,19 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 		else if (arg == "--wet") {
-			assert(i++ != argc);
+			assert(++i != argc);
 			float val = strtof(argv[i], NULL);
 			cout << "Setting wet to " << val << endl;
 			model.setwet(val);
 		}
 		else if (arg == "--dry") {
-			assert(i++ != argc);
+			assert(++i != argc);
 			float val = strtof(argv[i], NULL);
 			cout << "Setting dry to " << val << endl;
 			model.setdry(val);
 		}
 		else if (arg == "--damp") {
-			assert(i++ != argc);
+			assert(++i != argc);
 			float val = strtof(argv[i], NULL);
 			cout << "Setting damp to " << val << endl;
 			model.setdamp(val);
