@@ -16,15 +16,32 @@ using namespace std;
 #define INFILE "infile.wav"
 #define OUTFILE "outfile.wav"
 
-int main() {
+void show_help(string name) {
+	cout << "Usage: " << name << endl;
+}
+
+int main(int argc, char *argv[]) {
 	revmodel model;
-	
 	SNDFILE *infile, *outfile;
 	SF_INFO info;
 	int num, num_items;
 	float *inbuf, *outbuf;
 	int f, sr, c;
 	
+	/* Parse arguments */
+	for (int i = 1; i < argc; i++) {
+		string arg(argv[i]);
+		if (arg == "-h" || arg == "--help") {
+			show_help(argv[0]);
+			return 0;
+		}
+		else {
+			cout << "Invalid argument: " << arg << endl;
+			show_help(argv[0]);
+			return 0;
+		}
+	}
+
 	
 	/* Open the WAV file */
 	info.format = 0;
