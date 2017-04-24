@@ -20,9 +20,10 @@ void show_help(string name) {
 	cout << "Usage: " << name << " [options [..]]\n"
 		 << "Options:\n"
 		 << "-h, --help\t Show help\n"
-		 << "--wet WET\t Set the wet coefficient (float)\n"
-		 << "--dry DRY\t Set the dry coefficient (float)\n"
-		 << "--damp DAMP\t Set the damp coefficient (float)\n"
+		 << "--wet WET\t Set the wet coefficient (float) (default: " << initialwet << ")\n"
+		 << "--dry DRY\t Set the dry coefficient (float) (default: " << initialdry << ")\n"
+		 << "--damp DAMP\t Set the damp coefficient (float) (default: " << initialdamp << ")\n"
+		 << "--size SIZE\t Set the late reverberation size coefficient (float) (default: " << initialroom << ")\n"
 		 << endl;
 }
 
@@ -58,6 +59,12 @@ int main(int argc, char *argv[]) {
 			float val = strtof(argv[i], NULL);
 			cout << "Setting damp to " << val << endl;
 			model.setdamp(val);
+		}
+		else if (arg == "--size") {
+			assert(++i != argc);
+			float val = strtof(argv[i], NULL);
+			cout << "Setting late reverberation size to " << val << endl;
+			model.setroomsize(val);
 		}
 		else {
 			cout << "Invalid argument: " << arg << endl;
