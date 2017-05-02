@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sndfile.h>
+#include <portaudio.h>
 
 #include "revmodel.hpp"
 
@@ -15,6 +16,17 @@ using namespace std;
 
 #define INFILE "infile.wav"
 #define OUTFILE "outfile.wav"
+
+typedef struct
+{
+	float *left_in;
+	float *right_in;
+	float *left_out;
+	float *right_out;
+	int idx;
+	int maxidx;
+}
+paTestData;
 
 void show_help(string name) {
 	cout << "Usage: " << name << " [options [..]]\n"
@@ -34,6 +46,8 @@ int main(int argc, char *argv[]) {
 	int num, num_items;
 	float *inbuf, *outbuf;
 	int f, sr, c;
+	
+	paTestData *data = (paTestData *)malloc(sizeof(paTestData));
 	
 	/* Parse arguments */
 	for (int i = 1; i < argc; i++) {
@@ -86,6 +100,8 @@ int main(int argc, char *argv[]) {
 	sr = info.samplerate;
 	c = info.channels;
 	num_items = f*c;
+	
+	printf("channels: %d\n",c);
 
 	/* Allocate space for the data to be read, then read it. */
 	inbuf = (float *)malloc(num_items*sizeof(float));
@@ -94,9 +110,27 @@ int main(int argc, char *argv[]) {
 	assert(num == num_items);
 	sf_close(infile);
 	
+	/* Separate left and right audio channels */
+	data->left_in = new float[f];
+	data->right_in = new float[f];
+	data->left_out = new float[f];
+	data->right_out = new float[f];
+	data->idx = 0;
+	data->maxidx = f;
+	for(int i=0; i<f; i++){
+		data->left_in[i] = inbuf[data->idx];
+		if(c == 2){data->idx++;}
+		data->right_in[i] = inbuf[data->idx++];
+	}
+	
 	
 	/* Apply reverb filter */
-	model.processreplace(inbuf, inbuf, outbuf, outbuf, num_items, 1);
+	model.processreplace(data->left_in, data->right_in, data->left_out, data->right_out, f, 1);
+	data->idx = 0;
+	for(int i=0; i<f; i++){	
+		outbuf[data->idx++] = data->left_out[i];	// left 
+		outbuf[data->idx++] = data->right_out[i];	// right 
+	}
 	
 	
 	/* Write to wav file*/
@@ -110,6 +144,7 @@ int main(int argc, char *argv[]) {
 
 	free(inbuf);
 	free(outbuf);
+	free(data);
 
 	cout << "File processed" << endl;
 	return 0;
