@@ -7,7 +7,7 @@ Reverb implementation for MMAI Course
 
 ### Linux
 
-`sudo apt-get install cmake libsndfile1-dev portaudio19-dev`
+`sudo apt-get install cmake libsndfile1-dev portaudio19-dev libncurses5-dev`
 
 `./scripts/build.sh`
 
