@@ -332,6 +332,10 @@ error:
 */
 	free(inbuf);
 	free(outbuf);
+	delete data->left_in;
+	delete data->left_out;
+	delete data->right_in;
+	delete data->right_out;
 	free(data);
 
 	cout << "File processed" << endl;
