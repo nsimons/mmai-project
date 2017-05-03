@@ -185,6 +185,7 @@ int main(int argc, char *argv[]) {
 	/* Playback */
 	
 	/* Initialize */
+	data->idx = 0;
 	err = Pa_Initialize();
 	if(err != paNoError) goto error;
 	
@@ -194,7 +195,7 @@ int main(int argc, char *argv[]) {
 							   2,		// stereo outputBuffer
 							   paFloat32,	// 32 bit floating point output
 							   SAMPLE_RATE,
-							   paFramesPerBufferUnspecified,		// frames per buffer
+							   1024,//paFramesPerBufferUnspecified,		// frames per buffer
 							   patestCallback,	// callback function
 							   data );	// pointer that will be passed to callback
 	if(err != paNoError) goto error;
