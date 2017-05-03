@@ -44,6 +44,7 @@ paTestData;
 revmodel model;
 std::atomic<reverb_params> run_params;
 static bool g_bStop = false;
+static bool g_bSave = false;
 
 void save_params_to_model() {
 	model.setdry(run_params.load().dry);
@@ -117,12 +118,13 @@ void thread_callback(std::atomic<reverb_params>& run_params)
 	keypad(stdscr,TRUE); //accept keyboard input
 	nodelay(stdscr,TRUE); // disable getch() blocking
 	int c;
-	printw("Controls:\t[Increase]\t[Decrease]\n"
+	printw("Controls:\t [Increase]\t [Decrease]\n"
 		   "Wet  \t\t Q \t\t A \n"
 		   "Dry  \t\t W \t\t S \n"
 		   "Damp \t\t E \t\t D \n"
 		   "Size \t\t R \t\t F \n\n"
-		   "QUIT: \t\t P\n\n"
+		   "Quit: \t\t P\n"
+		   "Save and Quit:\t O\n\n"
 	); fflush(NULL);
 
 
@@ -149,6 +151,10 @@ void thread_callback(std::atomic<reverb_params>& run_params)
             params.size -= 0.1;
         else if (c == 'p')
         	g_bStop = true;
+        else if (c == 'o') {
+        	g_bSave = true;
+        	g_bStop = true;
+        }
 
         /* Limit the param to be positive */
 #define CHECK_PARAM(param) ((param) < 0 ? 0 : (param))
@@ -249,7 +255,6 @@ int main(int argc, char *argv[]) {
 
 	/* Allocate space for the data to be read, then read it. */
 	inbuf = (float *)malloc(num_items*sizeof(float));
-	outbuf = (float *)malloc(num_items*sizeof(float));
 	num = sf_read_float(infile,inbuf,num_items);
 	assert(num == num_items);
 	sf_close(infile);
@@ -301,37 +306,40 @@ int main(int argc, char *argv[]) {
 		
 		printf("Done\n"); fflush(stdout);
 	}
+	/* Processing complete, shut down the input thread */
+	g_bStop = true;
+	input_thread.join();
 	
-error:	
+	if (g_bSave) {
+		/* Write to wav file*/
+		outbuf = (float *)malloc(num_items*sizeof(float));
+
+		data->idx = 0;
+		for(int i=0; i<f; i++){
+			outbuf[data->idx++] = data->right_out[i];
+			if(c == 2) {
+				outbuf[data->idx++] = data->left_out[i];
+			}
+		}
+		outfile = sf_open(OUTFILE, SFM_WRITE, &info);
+		if (outfile) {
+			sf_count_t count = sf_write_float(outfile, outbuf, num_items);
+			assert(count == num_items);
+			sf_write_sync(outfile);
+			sf_close(outfile);
+		}
+		free(outbuf);
+		cout << "Saved result to " << OUTFILE << endl;
+	}
+
+error:
 	err = Pa_Terminate();
 	if(err != paNoError)
 	{
 		printf("PortAudio error: %s\n", Pa_GetErrorText(err));
 	}
-	/* Processing complete, shut down the input thread */
-	g_bStop = true;
-	input_thread.join();
-	
-	/* Apply reverb filter */
-/*	model.processreplace(data->left_in, data->right_in, data->left_out, data->right_out, f, 1);
-	data->idx = 0;
-	for(int i=0; i<f; i++){	
-		outbuf[data->idx++] = data->left_out[i];	// left 
-		outbuf[data->idx++] = data->right_out[i];	// right 
-	}
-*/	
-	
-	/* Write to wav file*/
-/*	outfile = sf_open(OUTFILE, SFM_WRITE, &info);
-	if (outfile) {
-		sf_count_t count = sf_write_float(outfile, outbuf, num_items);
-		assert(count == num_items);
-		sf_write_sync(outfile);
-		sf_close(outfile);
-	}
-*/
+
 	free(inbuf);
-	free(outbuf);
 	delete data->left_in;
 	delete data->left_out;
 	delete data->right_in;
