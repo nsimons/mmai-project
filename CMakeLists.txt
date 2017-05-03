@@ -11,6 +11,10 @@ if(NOT SND_LIB)
 	message(FATAL_ERROR "libsndfile library not found")
 endif()
 
+find_library(PortAudio_LIB portaudio)
+if(NOT PortAudio_LIB)
+	message(FATAL_ERROR "portaudio library not found")
+endif()
 
 include_directories(include)
 	
@@ -25,4 +29,4 @@ set_target_properties(
 
 	
 	
-target_link_libraries(mmai-exec sndfile)
+target_link_libraries(mmai-exec sndfile portaudio)

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sndfile.h>
+#include <portaudio.h>
 
 #include "revmodel.hpp"
 
@@ -15,6 +16,20 @@ using namespace std;
 
 #define INFILE "infile.wav"
 #define OUTFILE "outfile.wav"
+#define SAMPLE_RATE (44100)
+
+revmodel model;
+
+typedef struct
+{
+	float *left_in;
+	float *right_in;
+	float *left_out;
+	float *right_out;
+	int idx;
+	int maxidx;
+}
+paTestData;
 
 void show_help(string name) {
 	cout << "Usage: " << name << " [options [..]]\n"
@@ -27,13 +42,70 @@ void show_help(string name) {
 		 << endl;
 }
 
+static int patestCallback( const void *inputBuffer, void *outputBuffer,
+						   unsigned long framesPerBuffer,
+						   const PaStreamCallbackTimeInfo* timeInfo,
+						   PaStreamCallbackFlags statusFlags,
+						   void *userData )
+{    
+	/* Cast data passed through stream to our structure. */
+	paTestData *data = (paTestData*)userData;
+	float *lptrIn = &data->left_in[data->idx];
+	float *rptrIn = &data->right_in[data->idx];
+	float *lptrOut = &data->left_out[data->idx];
+	float *rptrOut = &data->right_out[data->idx];
+	float *out = (float*)outputBuffer;
+	unsigned int i;
+	int finished;
+	unsigned int framesLeft = data->maxidx - data->idx;
+	
+	(void) inputBuffer; /* Prevent unused variable warning. */
+	(void) timeInfo;
+	(void) statusFlags;
+	
+	model.processreplace(lptrIn, rptrIn, lptrOut, rptrOut, framesPerBuffer, 1);				 
+	
+	if(framesLeft < framesPerBuffer)
+	{
+		/* final buffer... */
+		for(i=0; i<framesLeft; i++)
+		{
+			*out++ = *lptrOut++; // left
+			*out++ = *rptrOut++; // right
+		}
+		for(; i<framesPerBuffer; i++)
+		{
+			*out++ = 0; // left
+			*out++ = 0; // right
+		}
+		data->idx += framesLeft;
+		finished = paComplete;
+	}
+	else
+	{
+		for(i=0; i<framesPerBuffer; i++)
+		{
+			*out++ = *lptrOut++; // left
+			*out++ = *rptrOut++; // right
+		}
+		data->idx += framesPerBuffer;
+		finished = paContinue;
+	}
+		
+		return finished;
+}
+
 int main(int argc, char *argv[]) {
-	revmodel model;
+	
 	SNDFILE *infile, *outfile;
 	SF_INFO info;
 	int num, num_items;
 	float *inbuf, *outbuf;
 	int f, sr, c;
+	
+	PaStream *stream;
+	PaError err = paNoError;
+	paTestData *data = (paTestData *)malloc(sizeof(paTestData));
 	
 	/* Parse arguments */
 	for (int i = 1; i < argc; i++) {
@@ -86,6 +158,8 @@ int main(int argc, char *argv[]) {
 	sr = info.samplerate;
 	c = info.channels;
 	num_items = f*c;
+	
+	printf("channels: %d\n",c);
 
 	/* Allocate space for the data to be read, then read it. */
 	inbuf = (float *)malloc(num_items*sizeof(float));
@@ -94,22 +168,83 @@ int main(int argc, char *argv[]) {
 	assert(num == num_items);
 	sf_close(infile);
 	
+	/* Separate left and right audio channels */
+	data->left_in = new float[f];
+	data->right_in = new float[f];
+	data->left_out = new float[f];
+	data->right_out = new float[f];
+	data->idx = 0;
+	data->maxidx = f;
+	for(int i=0; i<f; i++){
+		data->left_in[i] = inbuf[data->idx];
+		if(c == 2){data->idx++;}
+		data->right_in[i] = inbuf[data->idx++];
+	}
+	
+	
+	/* Playback */
+	
+	/* Initialize */
+	data->idx = 0;
+	err = Pa_Initialize();
+	if(err != paNoError) goto error;
+	
+	/* Open audio I/O stream */
+	err = Pa_OpenDefaultStream(&stream,
+							   0,		// no input channels
+							   2,		// stereo outputBuffer
+							   paFloat32,	// 32 bit floating point output
+							   SAMPLE_RATE,
+							   1024,//paFramesPerBufferUnspecified,		// frames per buffer
+							   patestCallback,	// callback function
+							   data );	// pointer that will be passed to callback
+	if(err != paNoError) goto error;
+	
+	if(stream)
+	{
+		err = Pa_StartStream(stream);
+		if(err != paNoError) goto error;
+		
+		printf("Waiting for playback to finish\n"); fflush(stdout);
+		
+		while((err = Pa_IsStreamActive(stream)) == 1) Pa_Sleep(100);
+		if(err < 0) goto error;
+		
+		err = Pa_CloseStream(stream);
+		if(err != paNoError) goto error;
+		
+		printf("Done\n"); fflush(stdout);
+	}
+	
+error:	
+	err = Pa_Terminate();
+	if(err != paNoError)
+	{
+		printf("PortAudio error: %s\n", Pa_GetErrorText(err));
+	}
+	
 	
 	/* Apply reverb filter */
-	model.processreplace(inbuf, inbuf, outbuf, outbuf, num_items, 1);
-	
+/*	model.processreplace(data->left_in, data->right_in, data->left_out, data->right_out, f, 1);
+	data->idx = 0;
+	for(int i=0; i<f; i++){	
+		outbuf[data->idx++] = data->left_out[i];	// left 
+		outbuf[data->idx++] = data->right_out[i];	// right 
+	}
+*/	
 	
 	/* Write to wav file*/
-	outfile = sf_open(OUTFILE, SFM_WRITE, &info);
+/*	outfile = sf_open(OUTFILE, SFM_WRITE, &info);
 	if (outfile) {
 		sf_count_t count = sf_write_float(outfile, outbuf, num_items);
 		assert(count == num_items);
 		sf_write_sync(outfile);
 		sf_close(outfile);
 	}
-
+*/
 	free(inbuf);
 	free(outbuf);
+	free(data);
 
 	cout << "File processed" << endl;
 	return 0;
