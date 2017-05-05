@@ -43,6 +43,7 @@ revmodel model;
 std::atomic<reverb_params> run_params;
 static bool g_bStop = false;
 static bool g_bSave = false;
+static bool g_bRestart = false;
 
 void save_params_to_model() {
 	model.setdry(run_params.load().dry);
@@ -59,6 +60,7 @@ void printText(reverb_params params)
 		   "Dry  \t\t%.2f\t  W \t\t  S \n"
 		   "Damp \t\t%.2f\t  E \t\t  D \n"
 		   "Size \t\t%.2f\t  R \t\t  F \n\n"
+		   "Restart:\t I\n"
 		   "Quit: \t\t P\n"
 		   "Save and Quit:\t O\n\n"
 		   , params.wet, params.dry, params.damp, params.size
@@ -84,6 +86,12 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 {    
 	/* Cast data passed through stream to our structure. */
 	paTestData *data = (paTestData*)userData;
+
+	if (g_bRestart) {
+		data->idx = 0;
+		g_bRestart = false;
+	}
+
 	float *lptrIn = &data->left_in[data->idx];
 	float *rptrIn = &data->right_in[data->idx];
 	float *lptrOut = &data->left_out[data->idx];
@@ -169,7 +177,8 @@ void thread_callback(std::atomic<reverb_params>& run_params)
         else if (c == 'o') {
         	g_bSave = true;
         	g_bStop = true;
-        }
+        } else if (c == 'i')
+        	g_bRestart = true;
 
         /* Limit the param to be positive */
 #define CHECK_PARAM(param) ((param) < 0 ? 0 : (param))
