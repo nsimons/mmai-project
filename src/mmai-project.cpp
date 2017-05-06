@@ -312,6 +312,9 @@ int main(int argc, char *argv[]) {
 	
 	if (g_bSave) {
 		/* Write to wav file*/
+		f = data->idx;
+		c = info.channels = 2; // Always write stereo
+		num_items = f*c;
 		outbuf = (float *)malloc(num_items*sizeof(float));
 
 		data->idx = 0;
