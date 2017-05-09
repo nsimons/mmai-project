@@ -51,6 +51,31 @@ void save_params_to_model() {
 	model.setroomsize(run_params.load().size);
 }
 
+void printText(reverb_params params)
+{
+	clear();
+	printw("Controls:\t[Value]\t [Increase]\t [Decrease]\n"
+		   "Wet  \t\t%.2f\t  Q \t\t  A \n"
+		   "Dry  \t\t%.2f\t  W \t\t  S \n"
+		   "Damp \t\t%.2f\t  E \t\t  D \n"
+		   "Size \t\t%.2f\t  R \t\t  F \n\n"
+		   "Quit: \t\t P\n"
+		   "Save and Quit:\t O\n\n"
+		   , params.wet, params.dry, params.damp, params.size
+	);
+	fflush(NULL);
+}
+
+// Limit parameters to 0.0 - 1.0
+float checkParam(float value)
+{
+	if (value < 0)
+		return 0;
+	else if (value > 1.0)
+		return 1.0;
+	return value;
+}
+
 static int patestCallback( const void *inputBuffer, void *outputBuffer,
 						   unsigned long framesPerBuffer,
 						   const PaStreamCallbackTimeInfo* timeInfo,
@@ -116,20 +141,12 @@ void thread_callback(std::atomic<reverb_params>& run_params)
 	keypad(stdscr,TRUE); //accept keyboard input
 	nodelay(stdscr,TRUE); // disable getch() blocking
 	int c;
-	printw("Controls:\t [Increase]\t [Decrease]\n"
-		   "Wet  \t\t Q \t\t A \n"
-		   "Dry  \t\t W \t\t S \n"
-		   "Damp \t\t E \t\t D \n"
-		   "Size \t\t R \t\t F \n\n"
-		   "Quit: \t\t P\n"
-		   "Save and Quit:\t O\n\n"
-	); fflush(NULL);
-
 
     while (!g_bStop)
     {
     	params = run_params.load();
         c = getch();
+		printText(params);
 
         if (c == 'q')
         	params.wet += 0.1;
@@ -157,10 +174,10 @@ void thread_callback(std::atomic<reverb_params>& run_params)
         /* Limit the param to be positive */
 #define CHECK_PARAM(param) ((param) < 0 ? 0 : (param))
 
-        params.wet = CHECK_PARAM(params.wet);
-        params.dry = CHECK_PARAM(params.dry);
-        params.damp = CHECK_PARAM(params.damp);
-        params.size = CHECK_PARAM(params.size);
+        params.wet = checkParam(params.wet);
+        params.dry = checkParam(params.dry);
+        params.damp = checkParam(params.damp);
+        params.size = checkParam(params.size);
 
         run_params.store(params);
         refresh();
