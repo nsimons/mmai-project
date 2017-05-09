@@ -285,7 +285,7 @@ int main(int argc, char *argv[]) {
 	infile = sf_open(infile_name.c_str(), SFM_READ, &info);
 	if(infile == NULL)
 	{
-		printf("Failed to open the file: %s\n", infile_name);
+		printf("Failed to open the file: %s\n", infile_name.c_str());
 		exit(-1);
 	}
 	/* Read info, and figure out how much data to read. */
