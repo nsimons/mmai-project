@@ -205,6 +205,7 @@ void show_help(string name) {
 		 << "--in file\t Set the input file (string) (default: infile.wav)\n"
 		 << "--out file\t Set the output file (string) (default: outfile.wav)\n"
 		 << "--noplayback\t Process and save to file without playback\n"
+		 << "--save\t\t Force save file in case when playback finishes without user interaction\n"
 		 << endl;
 }
 
@@ -255,6 +256,9 @@ int main(int argc, char *argv[]) {
 		else if (arg == "--noplayback") {
 			cout << "No playback " << endl;
 			noPlayback = true;
+			g_bSave = true;
+		}
+		else if (arg == "--save") {
 			g_bSave = true;
 		}
 		else if (arg == "--in") {
