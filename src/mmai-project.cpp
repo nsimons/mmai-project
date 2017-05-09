@@ -178,6 +178,7 @@ void show_help(string name) {
 		 << "--dry DRY\t Set the dry coefficient (float) (default: " << initialdry << ")\n"
 		 << "--damp DAMP\t Set the damp coefficient (float) (default: " << initialdamp << ")\n"
 		 << "--size SIZE\t Set the late reverberation size coefficient (float) (default: " << initialroom << ")\n"
+		 << "--noplayback\t Process and save to file without playback\n"
 		 << endl;
 }
 
@@ -188,6 +189,7 @@ int main(int argc, char *argv[]) {
 	int num, num_items;
 	float *inbuf, *outbuf;
 	int f, sr, c;
+	bool noPlayback = false;
 	
 	PaStream *stream;
 	PaError err = paNoError;
@@ -224,6 +226,12 @@ int main(int argc, char *argv[]) {
 			cout << "Setting late reverberation size to " << val << endl;
 			model.setroomsize(val);
 		}
+		else if (arg == "--noplayback") {
+			cout << "No playback " << endl;
+			noPlayback = true;
+			g_bSave = true;
+			
+		}
 		else {
 			cout << "Invalid argument: " << arg << endl;
 			show_help(argv[0]);
@@ -231,11 +239,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	/* Threading to read user input */
-	/* Initialize to what the model currently has */
-	reverb_params params = { model.getwet(), model.getdry(), model.getdamp(), model.getroomsize() };
-	run_params.store(params);
-	std::thread input_thread(thread_callback, std::ref(run_params));
+	
 
 	/* Open the WAV file */
 	info.format = 0;
@@ -272,44 +276,57 @@ int main(int argc, char *argv[]) {
 		data->right_in[i] = inbuf[data->idx++];
 	}
 	
-	
-	/* Playback */
-	
-	/* Initialize */
-	data->idx = 0;
-	err = Pa_Initialize();
-	if(err != paNoError) goto error;
-	
-	/* Open audio I/O stream */
-	err = Pa_OpenDefaultStream(&stream,
-							   0,		// no input channels
-							   2,		// stereo outputBuffer
-							   paFloat32,	// 32 bit floating point output
-							   SAMPLE_RATE,
-							   1024,//paFramesPerBufferUnspecified,		// frames per buffer
-							   patestCallback,	// callback function
-							   data );	// pointer that will be passed to callback
-	if(err != paNoError) goto error;
-	
-	if(stream)
+	if(!noPlayback)
 	{
-		err = Pa_StartStream(stream);
-		if(err != paNoError) goto error;
-		
-		printf("Waiting for playback to finish\n"); fflush(stdout);
-		
-		while((err = Pa_IsStreamActive(stream)) == 1 && g_bStop == false) Pa_Sleep(100);
-		if(err < 0) goto error;
-		
-		err = Pa_CloseStream(stream);
-		if(err != paNoError) goto error;
-		
-		printf("Done\n"); fflush(stdout);
-	}
-	/* Processing complete, shut down the input thread */
-	g_bStop = true;
-	input_thread.join();
+		/* Playback */
+
+		/* Threading to read user input */
+		/* Initialize to what the model currently has */
+		reverb_params params = { model.getwet(), model.getdry(), model.getdamp(), model.getroomsize() };
+		run_params.store(params);
+		std::thread input_thread(thread_callback, std::ref(run_params));
 	
+		/* Initialize */
+		data->idx = 0;
+		err = Pa_Initialize();
+		if(err != paNoError) goto error;
+	
+		/* Open audio I/O stream */
+		err = Pa_OpenDefaultStream(&stream,
+								   0,		// no input channels
+								   2,		// stereo outputBuffer
+								   paFloat32,	// 32 bit floating point output
+								   SAMPLE_RATE,
+								   1024,//paFramesPerBufferUnspecified,		// frames per buffer
+								   patestCallback,	// callback function
+								   data );	// pointer that will be passed to callback
+		if(err != paNoError) goto error;
+	
+		if(stream)
+		{
+			err = Pa_StartStream(stream);
+			if(err != paNoError) goto error;
+		
+			printf("Waiting for playback to finish\n"); fflush(stdout);
+		
+			while((err = Pa_IsStreamActive(stream)) == 1 && g_bStop == false) Pa_Sleep(100);
+			if(err < 0) goto error;
+		
+			err = Pa_CloseStream(stream);
+			if(err != paNoError) goto error;
+		
+			printf("Done\n"); fflush(stdout);
+		}
+		/* Processing complete, shut down the input thread */
+		g_bStop = true;
+		input_thread.join();
+	}
+	else
+	{
+		model.processreplace(data->left_in, data->right_in, data->left_out, data->right_out, f, 1);
+		data->idx = f;	
+	}
+
 	if (g_bSave) {
 		/* Write to wav file*/
 		f = data->idx;
@@ -336,10 +353,13 @@ int main(int argc, char *argv[]) {
 	}
 
 error:
-	err = Pa_Terminate();
-	if(err != paNoError)
+	if(!noPlayback)
 	{
-		printf("PortAudio error: %s\n", Pa_GetErrorText(err));
+		err = Pa_Terminate();
+		if(err != paNoError)
+		{
+			printf("PortAudio error: %s\n", Pa_GetErrorText(err));
+		}
 	}
 
 	free(inbuf);
