@@ -155,23 +155,24 @@ void thread_callback(std::atomic<reverb_params>& run_params)
     	params = run_params.load();
         c = getch();
 		printText(params);
+		float param_step = 0.05;
 
         if (c == 'q')
-        	params.wet += 0.1;
+        	params.wet += param_step;
         else if (c == 'a')
-            params.wet -= 0.1;
+            params.wet -= param_step;
         else if (c == 'w')
-            params.dry += 0.1;
+            params.dry += param_step;
         else if (c == 's')
-            params.dry -= 0.1;
+            params.dry -= param_step;
         else if (c == 'e')
-            params.damp += 0.1;
+            params.damp += param_step;
         else if (c == 'd')
-            params.damp -= 0.1;
+            params.damp -= param_step;
         else if (c == 'r')
-            params.size += 0.1;
+            params.size += param_step;
         else if (c == 'f')
-            params.size -= 0.1;
+            params.size -= param_step;
         else if (c == 'p')
         	g_bStop = true;
         else if (c == 'o') {
