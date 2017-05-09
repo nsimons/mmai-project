@@ -17,8 +17,6 @@
 
 using namespace std;
 
-#define INFILE "infile.wav"
-#define OUTFILE "outfile.wav"
 #define SAMPLE_RATE (44100)
 
 typedef struct
@@ -178,12 +176,14 @@ void show_help(string name) {
 		 << "--dry DRY\t Set the dry coefficient (float) (default: " << initialdry << ")\n"
 		 << "--damp DAMP\t Set the damp coefficient (float) (default: " << initialdamp << ")\n"
 		 << "--size SIZE\t Set the late reverberation size coefficient (float) (default: " << initialroom << ")\n"
+		 << "--in file\t Set the input file (string) (default: infile.wav)\n"
+		 << "--out file\t Set the output file (string) (default: outfile.wav)\n"
 		 << "--noplayback\t Process and save to file without playback\n"
 		 << endl;
 }
 
 int main(int argc, char *argv[]) {
-	
+	string infile_name("infile.wav"), outfile_name("outfile.wav");
 	SNDFILE *infile, *outfile;
 	SF_INFO info;
 	int num, num_items;
@@ -230,7 +230,16 @@ int main(int argc, char *argv[]) {
 			cout << "No playback " << endl;
 			noPlayback = true;
 			g_bSave = true;
-			
+		}
+		else if (arg == "--in") {
+			assert(++i != argc);
+			cout << "In file: " << argv[i] << endl;
+			infile_name = argv[i];
+		}
+		else if (arg == "--out") {
+			assert(++i != argc);
+			cout << "Out file: " << argv[i] << endl;
+			outfile_name = argv[i];
 		}
 		else {
 			cout << "Invalid argument: " << arg << endl;
@@ -243,10 +252,10 @@ int main(int argc, char *argv[]) {
 
 	/* Open the WAV file */
 	info.format = 0;
-	infile = sf_open(INFILE, SFM_READ, &info);
+	infile = sf_open(infile_name.c_str(), SFM_READ, &info);
 	if(infile == NULL)
 	{
-		printf("Failed to open the file: %s\n", INFILE);
+		printf("Failed to open the file: %s\n", infile_name);
 		exit(-1);
 	}
 	/* Read info, and figure out how much data to read. */
@@ -341,7 +350,7 @@ int main(int argc, char *argv[]) {
 				outbuf[data->idx++] = data->left_out[i];
 			}
 		}
-		outfile = sf_open(OUTFILE, SFM_WRITE, &info);
+		outfile = sf_open(outfile_name.c_str(), SFM_WRITE, &info);
 		if (outfile) {
 			sf_count_t count = sf_write_float(outfile, outbuf, num_items);
 			assert(count == num_items);
@@ -349,7 +358,7 @@ int main(int argc, char *argv[]) {
 			sf_close(outfile);
 		}
 		free(outbuf);
-		cout << "Saved result to " << OUTFILE << endl;
+		cout << "Saved result to " << outfile_name << endl;
 	}
 
 error:
