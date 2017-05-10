@@ -181,9 +181,7 @@ void thread_callback(std::atomic<reverb_params>& run_params)
         } else if (c == 'i')
         	g_bRestart = true;
 
-        /* Limit the param to be positive */
-#define CHECK_PARAM(param) ((param) < 0 ? 0 : (param))
-
+        /* Clip the params [0,1] */
         params.wet = checkParam(params.wet);
         params.dry = checkParam(params.dry);
         params.damp = checkParam(params.damp);
